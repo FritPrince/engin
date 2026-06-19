@@ -1,2 +1,9 @@
 # Documents propriétaires — ne pas publier sur le dépôt public
 *.pdf
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
