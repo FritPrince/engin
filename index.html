@@ -560,6 +560,11 @@ const examples = {
   fitness: `Dans cette vidéo on va parler de la transformation physique et des erreurs que font la majorité des gens qui veulent perdre du poids ou prendre du muscle. La première erreur et la plus commune c'est de faire du cardio à outrance en pensant que ça va faire perdre du poids. Les gens montent sur un tapis roulant pendant une heure tous les jours et mangent une salade le soir. Résultat après 3 semaines ils ont perdu 1 kilo et abandonnent parce que c'est trop lent. Ce qu'ils ne comprennent pas c'est que la nutrition représente 80% des résultats et que le cardio seul sans déficit calorique contrôlé ne sert pratiquement à rien. Le deuxième problème c'est la nutrition justement. Tout le monde est perdu avec les régimes. Faut-il faire du keto, du jeûne intermittent, compter les calories, supprimer les glucides. Il y a tellement d'informations contradictoires sur internet que les gens ne savent plus quoi croire et essaient plein de choses sans jamais aller au bout. Le troisième problème c'est la régularité à la salle. Les gens s'inscrivent en janvier, vont 4 fois les 2 premières semaines et puis plus rien. Ils ne savent pas comment structurer leurs séances, quels exercices faire, comment progresser semaine après semaine. Il n'y a personne pour les guider et ils se retrouvent à faire toujours les mêmes exercices sans jamais progresser.`
 };
 
+// ── CONFIG ────────────────────────────────────────────────
+// URL de ton proxy Cloudflare Worker (voir worker.js pour le déployer).
+// Remplace par l'URL réelle de ton worker, ex: https://scalefactory.tonnom.workers.dev
+const PROXY_URL = 'https://scalefactory.TONNOM.workers.dev';
+
 // ── STATE ─────────────────────────────────────────────────
 let analysisData = null;
 let fullReportText = '';
@@ -710,12 +715,12 @@ RÈGLES ABSOLUES :
 - Jamais de vente agressive dans le message.`;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch(PROXY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
+        model: 'claude-sonnet-4-6',
+        max_tokens: 8000,
         system: systemPrompt,
         messages: [{ role: 'user', content: `Analyse ce contenu et génère le rapport Scale Factory complet :\n\n${text}` }]
       })
@@ -731,6 +736,15 @@ RÈGLES ABSOLUES :
     document.getElementById('loader').classList.remove('show');
 
     const data = await response.json();
+
+    // Erreur renvoyée par le proxy ou par l'API Anthropic
+    if (!response.ok || data.error || !data.content) {
+      const msg = (data.error && (data.error.message || data.error)) || `Erreur ${response.status}`;
+      showError('L\'analyse a échoué : ' + msg);
+      document.getElementById('analyzeBtn').disabled = false;
+      return;
+    }
+
     let rawText = data.content.map(c => c.text || '').join('');
 
     // Clean JSON
